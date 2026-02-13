@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>you unlocked us</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #c2185b, #880e4f);
+    color: white;
+    text-align: center;
+    overflow-x: hidden;
+    transition: opacity 0.8s ease;
+}
+
+.fade-out { opacity: 0; }
+.hidden { display: none; }
+
+/* FLOATING HEARTS */
+
+.heart {
+    position: fixed;
+    bottom: -20px;
+    font-size: 18px;
+    animation: floatUp 8s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes floatUp {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 0.7; }
+    100% { transform: translateY(-110vh); opacity: 0; }
+}
+
+/* GENERAL */
+
+.lock-photo, .final-photo {
+    width: 230px;
+    border-radius: 20px;
+    margin: 20px 0;
+    box-shadow: 0 0 25px rgba(255,255,255,0.5);
+}
+
+button {
+    background: #ff4081;
+    border: none;
+    padding: 12px 22px;
+    margin: 10px;
+    border-radius: 25px;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: scale(1.07);
+    box-shadow: 0 0 15px #ff80ab;
+}
+
+textarea {
+    width: 300px;
+    height: 120px;
+    border-radius: 15px;
+    padding: 10px;
+    border: none;
+    resize: none;
+}
+
+.glow {
+    animation: glow 1.5s infinite alternate;
+}
+
+@keyframes glow {
+    from { box-shadow: 0 0 10px #ff80ab; }
+    to { box-shadow: 0 0 25px #ffffff; }
+}
+
+/* PIN */
+
+.pin-dots {
+    font-size: 30px;
+    letter-spacing: 10px;
+    margin: 20px 0;
+}
+
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    gap: 10px;
+    justify-content: center;
+}
+
+.keypad button {
+    padding: 20px;
+    font-size: 18px;
+    background: #f06292;
+}
+
+/* MEMORY GAME */
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+justify-content: center,
+    gap: 10px;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.card {
+    background: #f06292;
+    border-radius: 15px;
+    padding: 30px 10px;
+    cursor: pointer;
+}
+
+.card.matched {
+    background: #ff80ab;
+    box-shadow: 0 0 15px #ffb6c1;
+}
+
+#memoryDescription {
+    max-width: 350px;
+    margin: 15px auto;
+    min-height: 60px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+#memoryDescription.show {
+    opacity: 1;
+}
+
+/* SECOND PASSWORD */
+
+input {
+    padding: 10px;
+    border-radius: 15px;
+    border: none;
+    text-align: center;
+}
+
+.shake {
+    animation: shake 0.4s;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
+    75% { transform: translateX(-6px); }
+    100% { transform: translateX(0); }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- PIN -->
+<div id="pinPage">
+    <img src="uss.jpg" class="lock-photo">
+    <h2>enter the code to unlock us 💗</h2>
+    <div class="pin-dots" id="pinDisplay">○ ○ ○ ○</div>
+    <div class="keypad">
+        <button onclick="press(1)">1</button>
+        <button onclick="press(2)">2</button>
+        <button onclick="press(3)">3</button>
+        <button onclick="press(4)">4</button>
+        <button onclick="press(5)">5</button>
+        <button onclick="press(6)">6</button>
+        <button onclick="press(7)">7</button>
+        <button onclick="press(8)">8</button>
+        <button onclick="press(9)">9</button>
+        <button onclick="clearPin()">C</button>
+        <button onclick="press(0)">0</button>
+        <button onclick="clearPin()">⌫</button>
+    </div>
+</div>
+
+<div id="game" class="hidden">
+    <h2>match the memories 💗</h2>
+    <div class="grid" id="grid"></div>
+    <div id="memoryDescription"></div>
+</div>
+
+<div id="proposal" class="hidden"></div>
+<div id="official" class="hidden"></div>
+<div id="secondPassword" class="hidden"></div>
+<div id="messagePage" class="hidden"></div>
+
+<script>
+
+/* FLOATING HEARTS */
+function createHeart(){
+    const heart=document.createElement("div");
+    heart.className="heart";
+    heart.innerText="💗";
+    heart.style.left=Math.random()*100+"vw";
+    heart.style.animationDuration=(6+Math.random()*4)+"s";
+    document.body.appendChild(heart);
+    setTimeout(()=>heart.remove(),9000);
+}
+setInterval(createHeart,1200);
+
+/* FADE */
+function fadeTo(id){
+    document.body.classList.add("fade-out");
+    setTimeout(()=>{
+        document.querySelectorAll("body > div").forEach(d=>d.classList.add("hidden"));
+        document.getElementById(id).classList.remove("hidden");
+        document.body.classList.remove("fade-out");
+    },800);
+}
+
+/* PIN */
+const correctPin="2202";
+let enteredPin="";
+
+function press(num){
+    if(enteredPin.length>=4)return;
+    enteredPin+=num;
+    updateDisplay();
+    if(enteredPin.length===4){
+        if(enteredPin===correctPin){
+            fadeTo("game");
+            startGame();
+        } else {
+            enteredPin="";
+            updateDisplay();
+        }
+    }
+}
+
+function updateDisplay(){
+    let dots="● ".repeat(enteredPin.length);
+    let empty="○ ".repeat(4-enteredPin.length);
+    document.getElementById("pinDisplay").innerText=dots+empty;
+}
+
+function clearPin(){ enteredPin=""; updateDisplay(); }
+
+/* MEMORY GAME */
+const memories=[
+{text:"₍^. .^₎Ⳋ",desc:"your cats. our cats. the way that sentence changed without us even noticing. i think that says everything."},
+{text:"🐱🎧",desc:"we can be the most unserious people alive — jokes and laughing at absolutely nothing. but the second one of us needs something real, the jokes disappear. we listen. we stay. we choose each other seriously, even when we start in chaos."},
+{text:"🌖",desc:"we say goodnight like it’s a negotiation. stretching minutes. finding one more thing to say. because neither of us actually wants to leave. even with distance between us, nights feel less lonely knowing you’re on the other side of them."},
+{text:"🌼",desc:"i never text first. never. but I texted you. 21:21. and the moment you replied, it didn’t feel like the beginning — it felt like continuation. like I had known you before we even started talking."},
+{text:"❷ ❷ ❷",desc:"some things don’t feel random. the timing. the way we clicked instantly. the way our energy matched without effort. it felt less like coincidence and more like destiny quietly doing its work."},
+{text:"📷",desc:"the photos of your cats — I mean, our cats. the way you send them to me like I already belong there. and somehow, I do. i love that even in the smallest moments of your life, you make space for me."},
+{text:"🌙",desc:"our favorite word. no explanation needed. one 'dzit' from you and everything feels lighter."},
+{text:"⭐",desc:"you explaining things to me instead of laughing at what I don’t know. that patience? that’s love in its quietest form."},
+{text:"🌷",desc:"the day we started talking, i saw myself in you. not identical — just understood. like you were my other half in a different body."},
+{text:"▶︎•၊၊||၊|။||||။၊|။•",desc:"the way you actually listen to my voice messages. not just hear them — listen. even when I ramble. even when I overthink. you never make me feel too much. you just let me be me."},
+{text:"𝟕",desc:"almost three years. even the months we didn’t speak couldn’t erase what we are. a normal person might have walked away for good. but you reached back. and we found our way to each other again.."}
+];
+
+let cards=[],first=null,lockBoard=false,matches=0;
+
+function startGame(){
+    matches=0;
+    cards=[...memories,...memories].sort(()=>Math.random()-0.5);
+    const grid=document.getElementById("grid");
+    grid.innerHTML="";
+    document.getElementById("memoryDescription").classList.remove("show");
+
+    cards.forEach(mem=>{
+        const div=document.createElement("div");
+        div.className="card";
+        div.innerText="?";
+        div.onclick=()=>flip(div,mem);
+        grid.appendChild(div);
+    });
+}
+
+function flip(card,mem){
+    if(lockBoard||card.innerText!=="?")return;
+    card.innerText=mem.text;
+
+    if(!first){ first={card,mem}; return; }
+
+    if(first.mem.text===mem.text){
+        first.card.classList.add("matched");
+        card.classList.add("matched");
+        const box=document.getElementById("memoryDescription");
+        box.innerText=mem.desc;
+        box.classList.add("show");
+        first=null;
+        matches++;
+        if(matches===11)setTimeout(showProposal,1500);
+    } else {
+        lockBoard=true;
+        setTimeout(()=>{
+            first.card.innerText="?";
+            card.innerText="?";
+            first=null;
+            lockBoard=false;
+        },900);
+    }
+}
+
+/* PROPOSAL */
+function showProposal(){
+    fadeTo("proposal");
+    document.getElementById("proposal").innerHTML=`
+        <h2>💗 ??????? 💗</h2>
+        <img src="plz.jpg" class="final-photo">
+        <br>
+        <button onclick="playSong()">play our song 🎵</button>
+        <br><br>
+        <button onclick="showOfficial()">yes 💗</button>
+        <button onclick="showOfficial()">yes 😌</button>
+        <audio id="ourSong" src="jkkk.mp3"></audio>
+    `;
+}
+function playSong(){ document.getElementById("ourSong").play(); }
+
+/* OFFICIAL */
+function showOfficial(){
+    fadeTo("official");
+    document.getElementById("official").innerHTML=`
+        <img src="usmm.jpg" class="final-photo">
+        <h2>okay. we're officially us.</h2>
+        <br>
+        <button onclick="showSecondPassword()">one last thing 🤍</button>
+    `;
+}
+
+/* SECOND PASSWORD */
+const secondPasswordValue="Szybkisanhah";
+const hintMessage="moja fav twoja nazwa, nie ma lepszej (DUŻA LITERA)";
+
+function showSecondPassword(){
+    fadeTo("secondPassword");
+    document.getElementById("secondPassword").innerHTML=`
+        <h2>enter our word 🤍</h2>
+        <input type="password" id="secondInput">
+        <br><br>
+        <button onclick="checkSecondPassword()">unlock</button>
+        <br>
+        <button onclick="showHint()" style="font-size:12px;">hint?</button>
+        <div id="hintText" style="opacity:0;transition:0.5s;">${hintMessage}</div>
+    `;
+}
+
+function checkSecondPassword(){
+    const input=document.getElementById("secondInput");
+    if(input.value===secondPasswordValue){
+        showMessage();
+    } else {
+        input.classList.add("shake");
+        setTimeout(()=>input.classList.remove("shake"),400);
+        input.value="";
+    }
+}
+
+function showHint(){
+    document.getElementById("hintText").style.opacity="1";
+}
+
+/* 💌 FINAL FORM (REAL SEND) */
+function showMessage(){
+    fadeTo("messagePage");
+
+    document.getElementById("messagePage").innerHTML=`
+        <h2>leave your words here 🤍</h2>
+
+        <form id="loveForm">
+            <textarea name="message" required
+            placeholder="write something only we will understand..."></textarea>
+            <br><br>
+            <button type="submit" class="glow">send 💌</button>
+        </form>
+
+        <div id="formResponse" style="margin-top:15px; opacity:0; transition:0.6s;"></div>
+    `;
+
+    document.getElementById("loveForm").addEventListener("submit", sendMessage);
+}
+
+function sendMessage(e){
+    e.preventDefault();
+    const form=e.target;
+    const data=new FormData(form);
+
+    fetch("https://formspree.io/f/mgolarnl", {
+        method:"POST",
+        body:data,
+        headers:{'Accept':'application/json'}
+    })
+    .then(response=>{
+        if(response.ok){
+            form.style.display="none";
+            const r=document.getElementById("formResponse");
+            r.innerHTML="<h3>it's safe with me 🤍</h3>";
+            r.style.opacity="1";
+        } else {
+            alert("something went wrong 🤍");
+        }
+    })
+    .catch(()=>{
+        alert("network error 🤍");
+    });
+}
+
+</script>
+
+</body>
+</html>
